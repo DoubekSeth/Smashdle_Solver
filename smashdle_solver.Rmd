@@ -1,0 +1,143 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
+
+```{r}
+# Data Sheet
+smashdle_csv = Smashdle.CSV...Sheet1
+View(smashdle_csv)
+```
+
+```{r}
+# States that each category can take
+gender_states = c("Incorrect", "Correct")
+species_states = c("Incorrect", "Partial", "Correct")
+universe_states = c("Incorrect", "Partial", "Correct")
+weight_states = c("Lower", "Higher", "Correct") #Note: whether the target is higher or lower than the guess
+first.appearance_states = c("Incorrect", "Correct")
+platform.of.origin_states = c("Incorrect", "Partial", "Correct")
+origin.date_states = c("Lower", "Higher", "Correct")
+
+# Generating all possible state combinations
+possible_states = list(gender_states, species_states, universe_states, weight_states, first.appearance_states, platform.of.origin_states, origin.date_states)
+names(possible_states) = c("Gender", "Species", "Universe", "Weight", "First.Appearance", "Platform.of.Origin", "Origin.Date")
+possible_state_combos = expand.grid(possible_states)
+possible_state_combos
+```
+
+```{r}
+# Checks if a character matches a given state pattern
+check_state = function(g, smasher, state, characters){
+  for(i in 1:ncol(state)){
+    category_name = colnames(state[i])[1]
+    g_cat_val = characters[characters$Character == g, names(characters) == category_name]
+    smasher_cat_val = characters[characters$Character == smasher, names(characters) == category_name]
+    
+    # Now, let's go by the different options that states can be
+    if(state[i] == "Incorrect"){
+      # Splitting the string in a vector
+      g_part_vec = strsplit(g_cat_val, ", ")[[1]]
+      smasher_part_vec = strsplit(smasher_cat_val, ", ")[[1]]
+      
+      #Checking if any part of the first vector shows up in the second
+      if(any(g_part_vec %in% smasher_part_vec)){
+        return(FALSE)
+      }
+    } else if(state[i] == "Correct"){
+      if(g_cat_val != smasher_cat_val){
+        return(FALSE)
+      }
+    } else if(state[i] == "Partial"){
+      # Splitting the string in a vector
+      g_part_vec = strsplit(g_cat_val, ", ")[[1]]
+      smasher_part_vec = strsplit(smasher_cat_val, ", ")[[1]]
+      
+      #Checking if any part of the first vector shows up in the second but they aren't the same
+      if(!any(g_part_vec %in% smasher_part_vec) || g_cat_val == smasher_cat_val){
+        return(FALSE)
+      }
+    } else if(state[i] == "Lower"){
+      if(smasher_cat_val >= g_cat_val){
+        return(FALSE)
+      }
+    } else if(state[i] == "Higher"){
+      if(smasher_cat_val <= g_cat_val){
+        return(FALSE)
+      }
+    } else {
+      print("Problem in state")
+      return(FALSE)
+    }
+  }
+  return(TRUE)
+}
+
+# Let's make a function that gets the entropy of a guess, where x is the different states a guess can take and g is a guess
+# E[g] = sum_x p(x) * -log_2(p(x))
+entropy = function(g, possible_state_combos, characters){
+  # returned at end to find entropy
+  entropy = 0
+  for(i in 1:nrow(possible_state_combos)){
+    state = possible_state_combos[i, ]
+    
+    # Next, count how many characters match the state pattern
+    sum = 0
+    state_char_list = list()
+    for(charac_i in 1:nrow(characters)){
+       charac = characters[charac_i, names(characters) == "Character"]
+       if(check_state(g, charac, state, characters)){
+         print(charac)
+         sum = sum + 1
+      }
+    }
+    
+    #If the sum > 0, then print for debugging
+    
+    if(sum > 0){
+      print(summary(state))
+      print(sum)
+      entropy = entropy - (sum/nrow(characters) * log2(sum/nrow(characters)))
+    }
+    
+  }
+  return(entropy)
+}
+
+# loop over the list to find the best smasher
+best_char = function(possible_state_combos, full_char_list){
+  best_char = ""
+  best_entropy = 0
+  for(i in 1:nrow(full_char_list)){
+    charac = full_char_list[i, names(full_char_list) == "Character"]
+    entropy_of_charac = entropy(charac, possible_state_combos, full_char_list)
+    
+    print(cat("Character: ", charac, ", Entropy: ", entropy_of_charac))
+    
+    if(entropy_of_charac > best_entropy){
+      best_char = charac
+      best_entropy = entropy_of_charac
+      print("New Best!")
+    }
+  }
+}
+```
+
+```{r}
+entropy("Mr. Game & Watch", possible_state_combos, smashdle_csv)
+```
+
+
+```{r}
+best_char(possible_state_combos, smashdle_csv)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
