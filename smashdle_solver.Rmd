@@ -9,7 +9,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 
 ```{r}
 # Data Sheet
-smashdle_csv = Smashdle.CSV...Sheet1
+smashdle_csv = Smashdle_CSV
 View(smashdle_csv)
 ```
 
@@ -30,19 +30,21 @@ possible_state_combos = expand.grid(possible_states)
 possible_state_combos
 ```
 
+The Blocks below are useful for determining which starting character is the best
 ```{r}
-# Checks if a character matches a given state pattern
+# Checks if a character matches a given state pattern, returns true if match else false
 check_state = function(g, smasher, state, characters){
   for(i in 1:ncol(state)){
     category_name = colnames(state[i])[1]
     g_cat_val = characters[characters$Character == g, names(characters) == category_name]
     smasher_cat_val = characters[characters$Character == smasher, names(characters) == category_name]
     
+    
     # Now, let's go by the different options that states can be
     if(state[i] == "Incorrect"){
       # Splitting the string in a vector
-      g_part_vec = strsplit(g_cat_val, ", ")[[1]]
-      smasher_part_vec = strsplit(smasher_cat_val, ", ")[[1]]
+      g_part_vec = strsplit(g_cat_val, ",\\s*")[[1]]
+      smasher_part_vec = strsplit(smasher_cat_val, ",\\s*")[[1]]
       
       #Checking if any part of the first vector shows up in the second
       if(any(g_part_vec %in% smasher_part_vec)){
@@ -54,8 +56,8 @@ check_state = function(g, smasher, state, characters){
       }
     } else if(state[i] == "Partial"){
       # Splitting the string in a vector
-      g_part_vec = strsplit(g_cat_val, ", ")[[1]]
-      smasher_part_vec = strsplit(smasher_cat_val, ", ")[[1]]
+      g_part_vec = strsplit(g_cat_val, ",\\s*")[[1]]
+      smasher_part_vec = strsplit(smasher_cat_val, ",\\s*")[[1]]
       
       #Checking if any part of the first vector shows up in the second but they aren't the same
       if(!any(g_part_vec %in% smasher_part_vec) || g_cat_val == smasher_cat_val){
@@ -91,7 +93,7 @@ entropy = function(g, possible_state_combos, characters){
     for(charac_i in 1:nrow(characters)){
        charac = characters[charac_i, names(characters) == "Character"]
        if(check_state(g, charac, state, characters)){
-         print(charac)
+         #print(charac)
          sum = sum + 1
       }
     }
@@ -99,8 +101,8 @@ entropy = function(g, possible_state_combos, characters){
     #If the sum > 0, then print for debugging
     
     if(sum > 0){
-      print(summary(state))
-      print(sum)
+      #print(summary(state))
+      #print(sum)
       entropy = entropy - (sum/nrow(characters) * log2(sum/nrow(characters)))
     }
     
@@ -127,8 +129,42 @@ best_char = function(possible_state_combos, full_char_list){
 }
 ```
 
+While getting the optimal first guess is cool, let's also make it solve the entire thing. Not this isn't an automatic process, you have to feed it the information that the smashdle spits back at you.
 ```{r}
-entropy("Mr. Game & Watch", possible_state_combos, smashdle_csv)
+#The goal of this function is to reduce the roster down to only the eligible candidates given a guess and the state after the guess, returns a trimmed roster
+reduce_state_with_prev_guess = function(prev_guess, state, roster){
+  remaining_roster = roster[0, ]
+  
+  #Loop over roster and start eliminating
+  for(i in 1:nrow(roster)){
+    
+    char_name = roster[i, names(roster) == "Character"]
+    if(check_state(prev_guess, char_name, state, roster)){
+      #print(char_name)
+      remaining_roster = rbind(roster[i, ])
+    }
+  }
+  
+  return(remaining_roster)
+}
+
+#Returns a state given a seven dimensional vector, should be easily typable human input
+get_state = function(Gender, Species, Universe, Weight, First.Appearance, Platform.of.Origin, Origin.Date){
+  new_state = as.data.frame(list(Gender, Species, Universe, Weight, First.Appearance, Platform.of.Origin, Origin.Date))
+  names(new_state) = c("Gender", "Species", "Universe", "Weight", "First.Appearance", "Platform.of.Origin", "Origin.Date")
+  return(new_state)
+}
+```
+
+
+```{r}
+curr_state = get_state("Incorrect", "Partial", "Incorrect", "Higher", "Incorrect", "Partial", "Lower")
+reduce_state_with_prev_guess("Dr. Mario", curr_state, smashdle_csv)
+```
+
+
+```{r}
+entropy("Dr. Mario", possible_state_combos, smashdle_csv)
 ```
 
 
