@@ -9,7 +9,8 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 
 ```{r}
 # Data Sheet
-smashdle_csv = Smashdle_CSV
+library(readr)
+smashdle_csv <- read_csv("Smashdle_CSV.csv")
 View(smashdle_csv)
 ```
 
@@ -36,9 +37,11 @@ The Blocks below are useful for determining which starting character is the best
 check_state = function(g, smasher, state, characters){
   for(i in 1:ncol(state)){
     category_name = colnames(state[i])[1]
-    g_cat_val = characters[characters$Character == g, names(characters) == category_name]
-    smasher_cat_val = characters[characters$Character == smasher, names(characters) == category_name]
-    
+    g_cat_val = characters[characters$Character == g, names(characters) == category_name][[1]]
+    smasher_cat_val = characters[characters$Character == smasher, names(characters) == category_name][[1]]
+    #print(category_name)
+    #print(g_cat_val)
+    #print(smasher_cat_val)
     
     # Now, let's go by the different options that states can be
     if(state[i] == "Incorrect"){
@@ -91,9 +94,9 @@ entropy = function(g, possible_state_combos, characters){
     sum = 0
     state_char_list = list()
     for(charac_i in 1:nrow(characters)){
-       charac = characters[charac_i, names(characters) == "Character"]
+       charac = characters[charac_i, names(characters) == "Character"][[1]]
        if(check_state(g, charac, state, characters)){
-         #print(charac)
+         print(charac)
          sum = sum + 1
       }
     }
@@ -101,8 +104,8 @@ entropy = function(g, possible_state_combos, characters){
     #If the sum > 0, then print for debugging
     
     if(sum > 0){
-      #print(summary(state))
-      #print(sum)
+      print(summary(state))
+      print(sum)
       entropy = entropy - (sum/nrow(characters) * log2(sum/nrow(characters)))
     }
     
@@ -115,7 +118,7 @@ best_char = function(possible_state_combos, full_char_list){
   best_char = ""
   best_entropy = 0
   for(i in 1:nrow(full_char_list)){
-    charac = full_char_list[i, names(full_char_list) == "Character"]
+    charac = full_char_list[i, names(full_char_list) == "Character"][[1]]
     entropy_of_charac = entropy(charac, possible_state_combos, full_char_list)
     
     print(cat("Character: ", charac, ", Entropy: ", entropy_of_charac))
@@ -126,6 +129,8 @@ best_char = function(possible_state_combos, full_char_list){
       print("New Best!")
     }
   }
+  
+  return(best_char)
 }
 ```
 
@@ -135,13 +140,12 @@ While getting the optimal first guess is cool, let's also make it solve the enti
 reduce_state_with_prev_guess = function(prev_guess, state, roster){
   remaining_roster = roster[0, ]
   
-  #Loop over roster and start eliminating
+  #Loop over roster and only collect matches
   for(i in 1:nrow(roster)){
-    
-    char_name = roster[i, names(roster) == "Character"]
+    char_name = roster[i, names(roster) == "Character"][[1]]
     if(check_state(prev_guess, char_name, state, roster)){
-      #print(char_name)
-      remaining_roster = rbind(roster[i, ])
+      print(char_name)
+      remaining_roster = rbind(remaining_roster, roster[i, ])
     }
   }
   
@@ -156,20 +160,22 @@ get_state = function(Gender, Species, Universe, Weight, First.Appearance, Platfo
 }
 ```
 
-
-```{r}
-curr_state = get_state("Incorrect", "Partial", "Incorrect", "Higher", "Incorrect", "Partial", "Lower")
-reduce_state_with_prev_guess("Dr. Mario", curr_state, smashdle_csv)
-```
-
-
 ```{r}
 entropy("Dr. Mario", possible_state_combos, smashdle_csv)
 ```
 
 
 ```{r}
-best_char(possible_state_combos, smashdle_csv)
+curr_state = get_state("Correct", "Correct", "Incorrect", "Lower", "Incorrect", "Incorrect", "Higher")
+reduced_roster = reduce_state_with_prev_guess("Dr. Mario", curr_state, smashdle_csv)
+#best_char(possible_state_combos, reduced_roster) Lucas
+next_state = get_state
+```
+
+
+
+```{r}
+#best_char(possible_state_combos, smashdle_csv)
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
