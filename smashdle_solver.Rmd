@@ -32,6 +32,7 @@ possible_state_combos
 ```
 
 The Blocks below are useful for determining which starting character is the best
+
 ```{r}
 # Checks if a character matches a given state pattern, returns true if match else false
 check_state = function(g, smasher, state, characters){
@@ -82,11 +83,13 @@ check_state = function(g, smasher, state, characters){
   return(TRUE)
 }
 
-# Let's make a function that gets the entropy of a guess, where x is the different states a guess can take and g is a guess
+# Let's make a function that gets the entropy of a guess, where x is the different states a guess can take and g is a guess. Now returns states and their corresponding possible remaining rosters
 # E[g] = sum_x p(x) * -log_2(p(x))
 entropy = function(g, possible_state_combos, characters){
   # returned at end to find entropy
   entropy = 0
+  state_list = list()
+  roster_list = list()
   for(i in 1:nrow(possible_state_combos)){
     state = possible_state_combos[i, ]
     
@@ -96,7 +99,8 @@ entropy = function(g, possible_state_combos, characters){
     for(charac_i in 1:nrow(characters)){
        charac = characters[charac_i, names(characters) == "Character"][[1]]
        if(check_state(g, charac, state, characters)){
-         print(charac)
+         #print(charac)
+         state_char_list[[length(state_char_list)+1]] = charac
          sum = sum + 1
       }
     }
@@ -105,12 +109,15 @@ entropy = function(g, possible_state_combos, characters){
     
     if(sum > 0){
       print(summary(state))
-      print(sum)
+      print(state_char_list)
+      #print(sum)
+      state_list = append(state_list, list(state))
+      roster_list[[length(roster_list)+1]] = state_char_list
       entropy = entropy - (sum/nrow(characters) * log2(sum/nrow(characters)))
     }
     
   }
-  return(entropy)
+  return(list(entropy, state_list, roster_list))
 }
 
 # loop over the list to find the best smasher
@@ -119,7 +126,7 @@ best_char = function(possible_state_combos, full_char_list){
   best_entropy = 0
   for(i in 1:nrow(full_char_list)){
     charac = full_char_list[i, names(full_char_list) == "Character"][[1]]
-    entropy_of_charac = entropy(charac, possible_state_combos, full_char_list)
+    entropy_of_charac = entropy(charac, possible_state_combos, full_char_list)[[1]]
     
     print(cat("Character: ", charac, ", Entropy: ", entropy_of_charac))
     
@@ -135,6 +142,7 @@ best_char = function(possible_state_combos, full_char_list){
 ```
 
 While getting the optimal first guess is cool, let's also make it solve the entire thing. Not this isn't an automatic process, you have to feed it the information that the smashdle spits back at you.
+
 ```{r}
 #The goal of this function is to reduce the roster down to only the eligible candidates given a guess and the state after the guess, returns a trimmed roster
 reduce_state_with_prev_guess = function(prev_guess, state, roster){
@@ -142,7 +150,7 @@ reduce_state_with_prev_guess = function(prev_guess, state, roster){
   
   #Loop over roster and only collect matches
   for(i in 1:nrow(roster)){
-    char_name = roster[i, names(roster) == "Character"][[1]]
+    char_name = roster[i, names(roster) == "Character"][1]
     if(check_state(prev_guess, char_name, state, roster)){
       print(char_name)
       remaining_roster = rbind(remaining_roster, roster[i, ])
@@ -160,22 +168,12 @@ get_state = function(Gender, Species, Universe, Weight, First.Appearance, Platfo
 }
 ```
 
-```{r}
-entropy("Dr. Mario", possible_state_combos, smashdle_csv)
-```
-
+Now, let's create a flowchart that I can just look at to determine who is the best
 
 ```{r}
-curr_state = get_state("Correct", "Correct", "Incorrect", "Lower", "Incorrect", "Incorrect", "Higher")
-reduced_roster = reduce_state_with_prev_guess("Dr. Mario", curr_state, smashdle_csv)
-#best_char(possible_state_combos, reduced_roster) Lucas
-next_state = get_state
-```
-
-
-
-```{r}
-#best_char(possible_state_combos, smashdle_csv)
+#Note: I'm setting this field manually because the initial scan takes a long time, this could be coded to manually search for the best character each time but I don't think that's worth it
+starting_char = "Dr. Mario"
+first_guess_combos = entropy("Dr. Mario", possible_state_combos, smashdle_csv)
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
