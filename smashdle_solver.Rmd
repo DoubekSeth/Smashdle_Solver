@@ -10,6 +10,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 ```{r}
 # Data Sheet
 library(readr)
+library(igraph)
 smashdle_csv <- read_csv("Smashdle_CSV.csv")
 View(smashdle_csv)
 ```
@@ -99,8 +100,7 @@ entropy = function(g, possible_state_combos, characters){
     for(charac_i in 1:nrow(characters)){
        charac = characters[charac_i, names(characters) == "Character"][[1]]
        if(check_state(g, charac, state, characters)){
-         #print(charac)
-         state_char_list[[length(state_char_list)+1]] = charac
+         state_char_list[length(state_char_list)+1] = list(charac[[1]])
          sum = sum + 1
       }
     }
@@ -174,6 +174,19 @@ Now, let's create a flowchart that I can just look at to determine who is the be
 #Note: I'm setting this field manually because the initial scan takes a long time, this could be coded to manually search for the best character each time but I don't think that's worth it
 starting_char = "Dr. Mario"
 first_guess_combos = entropy("Dr. Mario", possible_state_combos, smashdle_csv)
+```
+```{r}
+#Setup the chart
+starting_vertices_count = length(first_guess_combos[[3]]) + 1
+flowchart = make_empty_graph()
+flowchart = add_vertices(flowchart, starting_vertices_count)
+flowchart = add_edges(flowchart, as.vector(rbind(1, 2:starting_vertices_count)))
+
+#Add attributes, set first one manually
+V(flowchart)$roster[[1]] = as.list(smashdle_csv$Character)
+for (i in 2:starting_vertices_count){
+ V(flowchart)$roster[[i]] = first_guess_combos[[3]][[i-1]]
+}
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
