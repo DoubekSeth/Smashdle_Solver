@@ -183,10 +183,31 @@ flowchart = add_vertices(flowchart, starting_vertices_count)
 flowchart = add_edges(flowchart, as.vector(rbind(1, 2:starting_vertices_count)))
 
 #Add attributes, set first one manually
+#Adding the roster to the vertices
 V(flowchart)$roster[[1]] = as.list(smashdle_csv$Character)
 for (i in 2:starting_vertices_count){
  V(flowchart)$roster[[i]] = first_guess_combos[[3]][[i-1]]
 }
+
+#Add labels to the vertices, these are the characters you should guess
+V(flowchart)$label[[1]] = "Dr. Mario"
+for (i in 2:starting_vertices_count){
+  #get the roster
+  remaining_roster = V(flowchart)$roster[[i]]
+  
+  #Now, find the best character
+  if(length(remaining_roster) == 1){
+    V(flowchart)$label[[i]] = remaining_roster[1]
+  } else {
+    remaining_roster_df = smashdle_csv[, (names(smashdle_csv$Character) in remaining_roster)]
+    best_char_name = best_char(possible_state_combos, remaining_roster_df)
+  }
+}
+
+#Adding the states to the edges
+#E(flowchart)$state = first_guess_combos[[2]]
+#E(flowchart)$label = first_guess_combos[[2]]
+plot(flowchart, layout = layout_nicely(flowchart))
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
