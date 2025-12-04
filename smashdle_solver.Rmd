@@ -108,8 +108,8 @@ entropy = function(g, possible_state_combos, characters){
     #If the sum > 0, then print for debugging
     
     if(sum > 0){
-      print(summary(state))
-      print(state_char_list)
+      #print(summary(state))
+      #print(state_char_list)
       #print(sum)
       state_list = append(state_list, list(state))
       roster_list[[length(roster_list)+1]] = state_char_list
@@ -168,13 +168,64 @@ get_state = function(Gender, Species, Universe, Weight, First.Appearance, Platfo
 }
 ```
 
-Now, let's create a flowchart that I can just look at to determine who is the best
+Now, let's create a flowchart that I can just look at to determine who is the best. Note: We actually only need to call this function once due to how the smashdle works. That means that at most you should only need 3 guesses to get optimal. If it had to be further expanded then you could run this on a while loop seeing if the expanded nodes have the same number as the original nodes.
+
+```{r}
+# Expands the non-leaf nodes of the graph to create the flowchart
+expand_children = function(graph){
+  for(i in V(graph)){
+    #If it's both currently a leaf node and has multiple people in the roster, expand it
+    if(degree(graph, V(graph)[i]) == 1 && length(V(graph)[[i]]$roster) > 1){
+      next_state_roster_combos = entropy(V(graph)[[i]]$label, possible_state_combos, smashdle_csv[smashdle_csv$Character %in% V(graph)[[i]]$roster, ])
+      next_state_roster_entropy = next_state_roster_combos[[1]]
+      next_state_roster_states = next_state_roster_combos[[2]]
+      next_state_roster_rosters = next_state_roster_combos[[3]]
+      
+      #Add new vertices
+      old_vertex_count = length(V(graph))
+      num_new_vertices = length(next_state_roster_rosters)
+      new_vertex_count = old_vertex_count + num_new_vertices
+      graph = add_vertices(graph, num_new_vertices)
+      #Add information to the new vertices
+      j = 1
+      for(i in range((old_vertex_count+1):new_vertex_count)){
+        #Add new roster
+        V(graph)[[i]]$roster = next_state_roster_rosters[[j]]
+        
+        #Add new label (best guess)
+        #Now, find the best character
+        # remaining_roster = V(graph[[i]])$roster
+        # if(length(remaining_roster) == 1){
+        #   V(graph)$label[[i]] = remaining_roster[1]
+        #   print(remaining_roster)
+        # } else {
+        #   remaining_roster_df = smashdle_csv[smashdle_csv$Character %in% remaining_roster, ]
+        #   best_char_name = best_char(possible_state_combos, remaining_roster_df)
+        #   V(graph)$label[[i]] = best_char_name
+        #   print(best_char_name)
+        #   print(remaining_roster)
+        # }
+        # j = j+1
+      }
+      
+      #Add new edges
+      #Todo
+      #Add information to the new edges
+      #print(next_state_roster_combos[[1]])
+      #print(next_state_roster_combos[[2]])
+      #print(next_state_roster_combos[[3]])
+    }
+  }
+}
+```
 
 ```{r}
 #Note: I'm setting this field manually because the initial scan takes a long time, this could be coded to manually search for the best character each time but I don't think that's worth it
 starting_char = "Dr. Mario"
 first_guess_combos = entropy("Dr. Mario", possible_state_combos, smashdle_csv)
 ```
+
+
 ```{r}
 #Setup the chart
 starting_vertices_count = length(first_guess_combos[[3]]) + 1
@@ -198,16 +249,19 @@ for (i in 2:starting_vertices_count){
   #Now, find the best character
   if(length(remaining_roster) == 1){
     V(flowchart)$label[[i]] = remaining_roster[1]
+    print(remaining_roster)
   } else {
-    remaining_roster_df = smashdle_csv[, (names(smashdle_csv$Character) in remaining_roster)]
+    remaining_roster_df = smashdle_csv[smashdle_csv$Character %in% remaining_roster, ]
     best_char_name = best_char(possible_state_combos, remaining_roster_df)
+    V(flowchart)$label[[i]] = best_char_name
+    print(best_char_name)
+    print(remaining_roster)
   }
 }
 
 #Adding the states to the edges
 #E(flowchart)$state = first_guess_combos[[2]]
-#E(flowchart)$label = first_guess_combos[[2]]
-plot(flowchart, layout = layout_nicely(flowchart))
+plot(flowchart, layout = layout_nicely(flowchart), asp = .25, vertex.size = 10)
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
