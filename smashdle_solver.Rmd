@@ -175,7 +175,7 @@ Now, let's create a flowchart that I can just look at to determine who is the be
 expand_children = function(graph){
   for(i in V(graph)){
     #If it's both currently a leaf node and has multiple people in the roster, expand it
-    if(degree(graph, V(graph)[i]) == 1 && length(V(graph)[[i]]$roster) > 1){
+    if(degree(graph, V(graph)[i]) <= 1 && length(V(graph)[[i]]$roster) > 1){
       next_state_roster_combos = entropy(V(graph)[[i]]$label, possible_state_combos, smashdle_csv[smashdle_csv$Character %in% V(graph)[[i]]$roster, ])
       next_state_roster_entropy = next_state_roster_combos[[1]]
       next_state_roster_states = next_state_roster_combos[[2]]
@@ -188,24 +188,25 @@ expand_children = function(graph){
       graph = add_vertices(graph, num_new_vertices)
       #Add information to the new vertices
       j = 1
-      for(i in range((old_vertex_count+1):new_vertex_count)){
+      for(i in (old_vertex_count+1):new_vertex_count){
         #Add new roster
+        print(next_state_roster_rosters[[j]])
         V(graph)[[i]]$roster = next_state_roster_rosters[[j]]
-        
-        #Add new label (best guess)
-        #Now, find the best character
-        # remaining_roster = V(graph[[i]])$roster
-        # if(length(remaining_roster) == 1){
-        #   V(graph)$label[[i]] = remaining_roster[1]
-        #   print(remaining_roster)
-        # } else {
-        #   remaining_roster_df = smashdle_csv[smashdle_csv$Character %in% remaining_roster, ]
-        #   best_char_name = best_char(possible_state_combos, remaining_roster_df)
-        #   V(graph)$label[[i]] = best_char_name
-        #   print(best_char_name)
-        #   print(remaining_roster)
-        # }
-        # j = j+1
+        print(V(graph)[[i]]$roster)
+        # Add new label (best guess)
+        # Now, find the best character
+        remaining_roster = V(graph)[[i]]$roster
+        if(length(remaining_roster) == 1){
+          V(graph)$label[[i]] = remaining_roster[1]
+          print(remaining_roster)
+        } else {
+          remaining_roster_df = smashdle_csv[smashdle_csv$Character %in% remaining_roster, ]
+          best_char_name = best_char(possible_state_combos, remaining_roster_df)
+          V(graph)$label[[i]] = best_char_name
+          print(best_char_name)
+          print(remaining_roster)
+        }
+        j = j+1
       }
       
       #Add new edges
@@ -216,6 +217,7 @@ expand_children = function(graph){
       #print(next_state_roster_combos[[3]])
     }
   }
+  return(graph)
 }
 ```
 
@@ -228,36 +230,36 @@ first_guess_combos = entropy("Dr. Mario", possible_state_combos, smashdle_csv)
 
 ```{r}
 #Setup the chart
-starting_vertices_count = length(first_guess_combos[[3]]) + 1
+starting_vertices_count = 1 #length(first_guess_combos[[3]]) + 1
 flowchart = make_empty_graph()
 flowchart = add_vertices(flowchart, starting_vertices_count)
-flowchart = add_edges(flowchart, as.vector(rbind(1, 2:starting_vertices_count)))
+#flowchart = add_edges(flowchart, as.vector(rbind(1, 2:starting_vertices_count)))
 
 #Add attributes, set first one manually
 #Adding the roster to the vertices
 V(flowchart)$roster[[1]] = as.list(smashdle_csv$Character)
-for (i in 2:starting_vertices_count){
- V(flowchart)$roster[[i]] = first_guess_combos[[3]][[i-1]]
-}
+# for (i in 2:starting_vertices_count){
+#  V(flowchart)$roster[[i]] = first_guess_combos[[3]][[i-1]]
+# }
 
 #Add labels to the vertices, these are the characters you should guess
 V(flowchart)$label[[1]] = "Dr. Mario"
-for (i in 2:starting_vertices_count){
-  #get the roster
-  remaining_roster = V(flowchart)$roster[[i]]
-  
-  #Now, find the best character
-  if(length(remaining_roster) == 1){
-    V(flowchart)$label[[i]] = remaining_roster[1]
-    print(remaining_roster)
-  } else {
-    remaining_roster_df = smashdle_csv[smashdle_csv$Character %in% remaining_roster, ]
-    best_char_name = best_char(possible_state_combos, remaining_roster_df)
-    V(flowchart)$label[[i]] = best_char_name
-    print(best_char_name)
-    print(remaining_roster)
-  }
-}
+# for (i in 2:starting_vertices_count){
+#   #get the roster
+#   remaining_roster = V(flowchart)$roster[[i]]
+#   
+#   #Now, find the best character
+#   if(length(remaining_roster) == 1){
+#     V(flowchart)$label[[i]] = remaining_roster[1]
+#     print(remaining_roster)
+#   } else {
+#     remaining_roster_df = smashdle_csv[smashdle_csv$Character %in% remaining_roster, ]
+#     best_char_name = best_char(possible_state_combos, remaining_roster_df)
+#     V(flowchart)$label[[i]] = best_char_name
+#     print(best_char_name)
+#     print(remaining_roster)
+#   }
+# }
 
 #Adding the states to the edges
 #E(flowchart)$state = first_guess_combos[[2]]
