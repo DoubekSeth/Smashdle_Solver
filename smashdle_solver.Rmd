@@ -188,28 +188,37 @@ expand_children = function(graph){
       graph = add_vertices(graph, num_new_vertices)
       #Add information to the new vertices
       j = 1
-      for(i in (old_vertex_count+1):new_vertex_count){
+      for(k in (old_vertex_count+1):new_vertex_count){
         #Add new roster
         print(next_state_roster_rosters[[j]])
-        V(graph)[[i]]$roster = next_state_roster_rosters[[j]]
-        print(V(graph)[[i]]$roster)
+        V(graph)[[k]]$roster = next_state_roster_rosters[[j]]
+        print(V(graph)[[k]]$roster)
         # Add new label (best guess)
         # Now, find the best character
-        remaining_roster = V(graph)[[i]]$roster
+        remaining_roster = V(graph)[[k]]$roster
         if(length(remaining_roster) == 1){
-          V(graph)$label[[i]] = remaining_roster[1]
-          print(remaining_roster)
+          V(graph)$label[[k]] = remaining_roster[1]
         } else {
           remaining_roster_df = smashdle_csv[smashdle_csv$Character %in% remaining_roster, ]
           best_char_name = best_char(possible_state_combos, remaining_roster_df)
-          V(graph)$label[[i]] = best_char_name
+          V(graph)$label[[k]] = best_char_name
           print(best_char_name)
           print(remaining_roster)
         }
+        #Add new edge
+        new_edge = c(i, k)
+        graph = add_edges(graph, new_edge)
+        
+        #Add state info to edge
+        newest_edge = length(E(graph))
+        E(graph)$state[[newest_edge]] = next_state_roster_states[[j]]
+        E(graph)$label[[newest_edge]] = paste(next_state_roster_states[[j]], collapse = ", ")
+        
+        #iterate through roster
         j = j+1
       }
       
-      #Add new edges
+      
       #Todo
       #Add information to the new edges
       #print(next_state_roster_combos[[1]])
@@ -263,7 +272,7 @@ V(flowchart)$label[[1]] = "Dr. Mario"
 
 #Adding the states to the edges
 #E(flowchart)$state = first_guess_combos[[2]]
-plot(flowchart, layout = layout_nicely(flowchart), asp = .25, vertex.size = 10)
+plot(flowchart, layout = layout_nicely(flowchart), vertex.size = 10)
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
