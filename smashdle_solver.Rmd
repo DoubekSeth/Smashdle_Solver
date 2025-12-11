@@ -11,6 +11,8 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 # Data Sheet
 library(readr)
 library(igraph)
+library(ggraph)
+library(tidygraph)
 smashdle_csv <- read_csv("Smashdle_CSV.csv")
 View(smashdle_csv)
 ```
@@ -247,32 +249,27 @@ flowchart = add_vertices(flowchart, starting_vertices_count)
 #Add attributes, set first one manually
 #Adding the roster to the vertices
 V(flowchart)$roster[[1]] = as.list(smashdle_csv$Character)
-# for (i in 2:starting_vertices_count){
-#  V(flowchart)$roster[[i]] = first_guess_combos[[3]][[i-1]]
-# }
 
 #Add labels to the vertices, these are the characters you should guess
 V(flowchart)$label[[1]] = "Dr. Mario"
-# for (i in 2:starting_vertices_count){
-#   #get the roster
-#   remaining_roster = V(flowchart)$roster[[i]]
-#   
-#   #Now, find the best character
-#   if(length(remaining_roster) == 1){
-#     V(flowchart)$label[[i]] = remaining_roster[1]
-#     print(remaining_roster)
-#   } else {
-#     remaining_roster_df = smashdle_csv[smashdle_csv$Character %in% remaining_roster, ]
-#     best_char_name = best_char(possible_state_combos, remaining_roster_df)
-#     V(flowchart)$label[[i]] = best_char_name
-#     print(best_char_name)
-#     print(remaining_roster)
-#   }
-# }
 
-#Adding the states to the edges
-#E(flowchart)$state = first_guess_combos[[2]]
-plot(flowchart, layout = layout_nicely(flowchart), vertex.size = 10)
+#Manually doing 2 cycles since I know that's how many this one needs, theoretically could call this more times and do automatically
+expanded_flowchart = expand_children(flowchart)
+expanded_2_flowchart = expand_children(expanded_flowchart)
+
+
+plot(expanded_2_flowchart, vertex.size = 10)
+```
+That plot sucks, let's try another one
+```{r}
+#Trying to make the graph more readable
+two_select_map = c("1" = "🟥", "2" = "🟩")
+three_select_map = c("1" = "🟥", "2" = "🟨", "3" = "🟩")
+up_down_map = c("1" = "⬇️", "2" = "⬆️", "3" = "🟩")
+maps = list(two_select_map, three_select_map, three_select_map, up_down_map, two_select_map, three_select_map, up_down_map)
+emoji_labels = lapply(E(expanded_2_flowchart)$label, function(x) mapply(function(v, map) map[[v]], as.numeric(unlist(strsplit(x, ",\\s*"))), maps))
+
+ggraph(expanded_2_flowchart, layout = 'unrooted') + geom_edge_link(aes(label = emoji_labels)) + geom_node_label(aes(label = label))
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
