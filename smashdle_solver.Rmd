@@ -11,8 +11,8 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 # Data Sheet
 library(readr)
 library(igraph)
-library(ggraph)
-library(tidygraph)
+library(jsonlite)
+
 smashdle_csv <- read_csv("Smashdle_CSV.csv")
 View(smashdle_csv)
 ```
@@ -214,8 +214,6 @@ expand_children = function(graph){
         #Add state info to edge
         newest_edge = length(E(graph))
         E(graph)$state[[newest_edge]] = next_state_roster_states[[j]]
-        E(graph)$label[[newest_edge]] = paste(next_state_roster_states[[j]], collapse = ", ")
-        
         #iterate through roster
         j = j+1
       }
@@ -263,14 +261,25 @@ plot(expanded_2_flowchart, vertex.size = 10)
 That plot sucks, let's try another one
 ```{r}
 #Trying to make the graph more readable
-two_select_map = c("1" = "🟥", "2" = "🟩")
-three_select_map = c("1" = "🟥", "2" = "🟨", "3" = "🟩")
-up_down_map = c("1" = "⬇️", "2" = "⬆️", "3" = "🟩")
-maps = list(two_select_map, three_select_map, three_select_map, up_down_map, two_select_map, three_select_map, up_down_map)
-emoji_labels = lapply(E(expanded_2_flowchart)$label, function(x) mapply(function(v, map) map[[v]], as.numeric(unlist(strsplit(x, ",\\s*"))), maps))
+#two_select_map = c("1" = "🟥", "2" = "🟩")
+#three_select_map = c("1" = "🟥", "2" = "🟨", "3" = "🟩")
+#up_down_map = c("1" = "⬇️", "2" = "⬆️", "3" = "🟩")
+#maps = list(two_select_map, three_select_map, three_select_map, up_down_map, two_select_map, three_select_map, up_down_map)
+#emoji_labels = lapply(E(expanded_2_flowchart)$label, function(x) mapply(function(v, map) map[[v]], as.numeric(unlist(strsplit(x, ",\\s*"))), maps))
 
-ggraph(expanded_2_flowchart, layout = 'unrooted') + geom_edge_link(aes(label = emoji_labels)) + geom_node_label(aes(label = label))
+#ggraph(expanded_2_flowchart, layout = 'unrooted') + geom_edge_link(aes(label = emoji_labels)) + geom_node_label(aes(label = label))
 ```
+The lack of color and tools is really hurting the visualizations here, I think it's time to migrate to d3
+```{r}
+#Extract Data
+nodes = as_data_frame(expanded_2_flowchart, what = "vertices")
+edges = as_data_frame(expanded_2_flowchart, what = "edges")
+
+export_list = list(nodes, edges)
+
+write_json(export_list, "graph_data.json", pretty = TRUE)
+```
+
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
